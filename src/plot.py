@@ -20,14 +20,15 @@ COLORS_LABELS = {
     "#54989f": "BUY!",
     "#4472c4": "Fire sale!",
 }
-BAND_WIDTH = 0.3
+BAND_WIDTH = 0.40
+DECREASE = 4.5
 NUM_BANDS = 9
 FIGURE_SIZE = (15, 7)
 BACKGROUND_COLOR = "#0d1117"
 EXTEND_MONTHS = 9
 
 
-def create_plot(raw_data, popt):
+def create_plot(symbol, raw_data, popt, band_width, decrease):
 
     # Create plot
     fig, ax = plt.subplots(figsize=FIGURE_SIZE)
@@ -35,16 +36,17 @@ def create_plot(raw_data, popt):
     ax.set_facecolor(BACKGROUND_COLOR)
 
     # Plot rainbow bands and price data
-    plot_rainbow(ax, raw_data, popt)
-    plot_price(ax, raw_data)
+    plot_rainbow(ax, raw_data, popt, decrease=decrease, band_width=band_width)
+    plot_price(symbol, ax, raw_data)
 
     # Add halving lines
-    add_halving_lines(ax)
+    if symbol == "bitcoin":
+        add_halving_lines(ax)
 
     # Configure plot appearance
     configure_plot(ax, raw_data)
 
-    add_legend(ax)
+    add_legend(symbol, ax)
 
 
 def add_halving_lines(ax):
@@ -78,7 +80,7 @@ def extend_dates(raw_data, months=EXTEND_MONTHS):
     return pd.concat([raw_data["Date"], pd.Series(extended_dates)])
 
 
-def plot_rainbow(ax, raw_data, popt, num_bands=NUM_BANDS, band_width=BAND_WIDTH):
+def plot_rainbow(ax, raw_data, popt, decrease=DECREASE, num_bands=NUM_BANDS, band_width=BAND_WIDTH):
     """
     Plot rainbow bands on the given axis.
 
@@ -94,7 +96,7 @@ def plot_rainbow(ax, raw_data, popt, num_bands=NUM_BANDS, band_width=BAND_WIDTH)
 
     legend_handles = []
     for i in range(num_bands):
-        i_decrease = 1.5
+        i_decrease = decrease
         lower_bound = np.exp(
             extended_fitted_ydata + (i - i_decrease) * band_width - band_width
         )
@@ -110,7 +112,7 @@ def plot_rainbow(ax, raw_data, popt, num_bands=NUM_BANDS, band_width=BAND_WIDTH)
     return legend_handles
 
 
-def plot_price(ax, raw_data):
+def plot_price(symbol, ax, raw_data):
     """
     Plot Bitcoin price data on the given axis.
 
@@ -125,7 +127,7 @@ def plot_price(ax, raw_data):
         raw_data["Date"].values,
         raw_data["Value"].values,
         color="white",
-        label="BTC Price",
+        label=f"{symbol.upper()} Price",
     )[0]
 
 
@@ -165,13 +167,13 @@ def configure_plot(ax, raw_data):
 
     # Set x-axis major ticks to every year
     ax.xaxis.set_major_locator(mdates.YearLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%y"))
 
     # Rotate and align the tick labels for better readability
     plt.setp(ax.get_xticklabels(), rotation=0)
 
 
-def add_legend(ax):
+def add_legend(symbol, ax):
     # Create custom legend handles with square markers, including BTC price
     legend_handles = [
         plt.Line2D(
@@ -181,7 +183,7 @@ def add_legend(ax):
             color=BACKGROUND_COLOR,
             markerfacecolor="white",
             markersize=10,
-            label="BTC price",
+            label=f"{symbol.upper()} price",
         )
     ] + [
         plt.Line2D(
